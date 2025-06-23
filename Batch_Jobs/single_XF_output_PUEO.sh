@@ -2,6 +2,14 @@
 ##############################################################
 # Run the output xmacro for a single individual finished in XF
 ##############################################################
+
+check_exit_status() {
+    if [ $? -ne 0 ]; then
+        echo $1
+		exit 1
+    fi
+}
+
 individual_number=$1
 WorkingDir=$2   
 RunName=$3
@@ -21,6 +29,7 @@ rm -f $RunXMacrosDir/output.xmacro
 # Create the output xmacro
 echo "var NPOP = 1;" >> $RunXMacrosDir/output.xmacro
 echo "var popsize = $NPOP;" >> $RunXMacrosDir/output.xmacro
+echo "var freqs = $FREQS;" >> $RunXMacrosDir/output.xmacro
 echo "var workingdir = \"$WorkingDir\";" >> $RunXMacrosDir/output.xmacro
 echo "var run_name = \"$RunName\";" >> $RunXMacrosDir/output.xmacro
 echo "var rundir = workingdir + \"/Run_Outputs/\" + run_name;" >> $RunXMacrosDir/output.xmacro
@@ -33,7 +42,8 @@ cat shortened_outputmacroskeleton.js >> $RunXMacrosDir/output.xmacro
 module load xfdtd/7.10.2.3 #7.9.2.2
 module load cuda
 
-xfdtd $XFProj --execute-macro-script=$RunXMacrosDir/output.xmacro || true --splash=false
+xfdtd $XFProj --execute-macro-script=$RunXMacrosDir/output.xmacro #--splash=false
+check_exit_status "output macro failed"
 
 echo "finished output.xmacro"
 
@@ -45,15 +55,16 @@ cd $WorkingDir/Antenna_Performance_Metric
 echo "indiv_in_pop: $indiv_in_pop"
 echo "individual_number: $individual_number"
 
-module load python/3.6-conda5.2
 
-python XFintoPUEO_Symmetric.py $NPOP $WorkingDir $RunName $gen $RunDir/Gain_Files/$gen/$indiv_in_pop --single=$indiv_in_pop
+#module load python/3.6-conda5.2
 
-cd $RunDir/Gain_Files
+#python XFintoPUEO_Symmetric.py $NPOP $WorkingDir $RunName $gen $RunDir/Gain_Files/$gen/$indiv_in_pop --single=$indiv_in_pop
 
-chmod -R 777 $PSIMDIR/pueoBuilder/components/pueoSim/data/antennas/simulated/* 2>/dev/null
+#cd $RunDir/Gain_Files
 
-echo "Moved individual ${indiv_in_pop}'s gain files to pueoSim directory"
-echo " "
-echo " "
+#chmod -R 777 $PSIMDIR/pueoBuilder/components/pueoSim/data/antennas/simulated/* 2>/dev/null
+
+#echo "Moved individual ${indiv_in_pop}'s gain files to pueoSim directory"
+#echo " "
+#echo " "
 echo " "

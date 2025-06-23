@@ -2,13 +2,18 @@
 // S is the side length of the bottom of the wall
 // m is the coefficient for the linear function the walls extrude according to (currently set to 1)
 // H is the final height of the walls
-function build_walls(S,m,H) 
+function build_walls(S,FS, FL) 
 {
-	// Make the edges to define the square
-	var edge1 = Line( new Cartesian3D(-S,-S, 0), new Cartesian3D(-S, S, 0));
-	var edge2 = Line( new Cartesian3D(-S, S, 0), new Cartesian3D(S, S, 0));
-	var edge3 = Line( new Cartesian3D(S,S, 0), new Cartesian3D(S, -S, 0));
-	var edge4 = Line( new Cartesian3D(S,-S, 0), new Cartesian3D(-S, -S, 0));
+
+        // S - sidelength of waveguide
+		// FS - sidelength of flare at the end
+		// FL - flare length
+
+	// Make the edges to define the square. Match what's in build waveguide.
+	var edge1 = Line( new Cartesian3D(-S/2,-S/2, 0), new Cartesian3D(-S/2, S/2, 0));
+	var edge2 = Line( new Cartesian3D(-S/2, S/2, 0), new Cartesian3D(S/2, S/2, 0));
+	var edge3 = Line( new Cartesian3D(S/2,S/2, 0), new Cartesian3D(S/2, -S/2, 0));
+	var edge4 = Line( new Cartesian3D(S/2,-S/2, 0), new Cartesian3D(-S/2, -S/2, 0));
 
 //	var edge1 = Line( new Cartesian3D(-S,-S, 0), new Cartesian3D(-S, S, 0));
 //	var edge2 = Line( new Cartesian3D(-S, S, 0), new Cartesian3D(S/2, S, 0));
@@ -44,8 +49,11 @@ function build_walls(S,m,H)
 	//var bottom = App.getActiveProject().getGeometryAssembly().append(bottomModel);
 	//bottom.name = "Bottom square";
 
+	m = (FS-S)/(2*FL)
+    Output.println("m: "+m)
+
 	// Now we need to extrude the edges to get height
-	var walls = new Extrude( wallSegment, H);				// Makes an Extrude
+	var walls = new Extrude( wallSegment, FL);				// Makes an Extrude
 	var wallOptions = walls.getOptions();						// Gives the possible options for 
 	// We will use the draft law option to extrude linearly
 	wallOptions.draftOption = SweepOptions.DraftLaw;			// allows for draftlaw

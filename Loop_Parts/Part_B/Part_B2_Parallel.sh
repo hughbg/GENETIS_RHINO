@@ -4,6 +4,13 @@
 # submitting the pueoSim jobs as they finish
 # The script waits until all XF and pueoSim jobs are finished
 
+check_exit_status() {
+    if [ $? -ne 0 ]; then
+        echo $1
+		exit 1
+    fi
+}
+
 # varaibles
 WorkingDir=$1
 RunName=$2
@@ -92,12 +99,13 @@ do
 
 	if [[ $temp_flags -eq 0 || $jobs_submitted -gt $max_jobs ]]
 	then
-		tput cuu 1
+		#tput cuu 1
 		sleep 10
 	else
+
 		for file in Run_Outputs/$RunName/Flags/TMPGPUFlags/*.txt
 		do	
-			echo $file
+			echo "Flag $file set"
 			filename=$(echo "$file" | cut -d'/' -f5)
 			echo $filename
 			indiv=$(echo "$filename" | cut -d'_' -f5)
@@ -109,41 +117,45 @@ do
 			# run the xmacro output script
 			cd $WorkingDir/Batch_Jobs
 			mkdir -m775 $RunDir/uan_files/${gen}_uan_files/${indiv_in_pop} 2> /dev/null
-			./single_XF_output_PUEO.sh $indiv $WorkingDir $RunName $gen 1> "$RunDir/Errs_And_Outs/XFintoPUEOOuts/PUEOsim_${indiv}.output" 2> "$RunDir/Errs_And_Outs/XFintoPUEOOuts/PUEOsim_${indiv}.error"
+            echo "Extracting uan to $RunDir/uan_files/${gen}_uan_files/${indiv_in_pop}"
+			./single_XF_output_PUEO.sh $indiv $WorkingDir $RunName $gen 1> "$RunDir/Errs_And_Outs/UANOuts/UANout_${indiv}.output" 2> "$RunDir/Errs_And_Outs/UANOuts/UANout_${indiv}.error"
+            check_exit_status "Failed getting UAN"
 
 
-			cd $WorkingDir
 
-			# Get the NNT and number of jobs from the python script Antenna_Performance_Metric/calculating_NNT.py
-			jobs_left=$((NPOP-root_flags))
-
-			echo "jobs submitted: $jobs_submitted"
-			echo "jobs left: $jobs_left"
-			echo "XFCOUNT: $num_keys"
-			echo "NNT: $NNT"
-			echo "max_jobs: $max_jobs"
-			echo " "
-			echo " " 
-			echo " " 
-
-			parse=$(python Antenna_Performance_Metric/calculating_NNT.py $jobs_submitted $jobs_left $num_keys $NNT $max_jobs)
-			NNT_per_sim=$(echo $parse | cut -d',' -f1)
-			num_jobs=$(echo $parse | cut -d',' -f2)
-
-			echo "NNT per sim: $NNT_per_sim"
-			echo "num_jobs: $num_jobs"
-			echo " "
-			echo " "
-
-			# set the output file to Run_Outputs/$RunName/PUEO_Outputs/PUEOsim_$indiv_$SLURM_ARRAY_TASK_ID.output
-			sbatch --array=1-$num_jobs \
-				--export=ALL,gen=$gen,WorkingDir=$WorkingDir,RunName=$RunName,NNT_per_sim=$NNT_per_sim,indiv=$indiv_in_pop,num_jobs=$num_jobs \
-				--job-name=${RunName} --output=$RunDir/Errs_And_Outs/PUEO_Outputs/PUEOsim_${indiv_in_pop}_%a.output  \
-				--error=$RunDir/Errs_And_Outs/PUEO_Errors/PUEOsim_${indiv_in_pop}_%a.error $WorkingDir/Batch_Jobs/PueoCall_Array_Indiv.sh
+#			cd $WorkingDir
+#
+#			# Get the NNT and number of jobs from the python script Antenna_Performance_Metric/calculating_NNT.py
+#			jobs_left=$((NPOP-root_flags))
+#
+#			echo "jobs submitted: $jobs_submitted"
+#			echo "jobs left: $jobs_left"
+#			echo "XFCOUNT: $num_keys"
+#			echo "NNT: $NNT"
+#			echo "max_jobs: $max_jobs"
+#			echo " "
+#			echo " " 
+#			echo " " 
+#
+#			parse=$(python Antenna_Performance_Metric/calculating_NNT.py $jobs_submitted $jobs_left $num_keys $NNT $max_jobs)
+#			NNT_per_sim=$(echo $parse | cut -d',' -f1)
+#			num_jobs=$(echo $parse | cut -d',' -f2)
+#
+#			echo "NNT per sim: $NNT_per_sim"
+#			echo "num_jobs: $num_jobs"
+#			echo " "
+#			echo " "
+#
+#			# set the output file to Run_Outputs/$RunName/PUEO_Outputs/PUEOsim_$indiv_$SLURM_ARRAY_TASK_ID.output
+#			sbatch --array=1-$num_jobs \
+#				--export=ALL,gen=$gen,WorkingDir=$WorkingDir,RunName=$RunName,NNT_per_sim=$NNT_per_sim,indiv=$indiv_in_pop,num_jobs=$num_jobs \
+#				--job-name=${RunName} --output=$RunDir/Errs_And_Outs/PUEO_Outputs/PUEOsim_${indiv_in_pop}_%a.output  \
+#				--error=$RunDir/Errs_And_Outs/PUEO_Errors/PUEOsim_${indiv_in_pop}_%a.error $WorkingDir/Batch_Jobs/PueoCall_Array_Indiv.sh
 			# move the cursor up 1 line
-			tput cuu 1
+			#tput cuu 1
 			# move the file to the GPUFlags directory
 			cd $WorkingDir
+            cp $file Run_Outputs/$RunName/Flags/ROOTFlags
 			mv $file Run_Outputs/$RunName/Flags/GPUFlags
 		done
 	fi
@@ -163,10 +175,10 @@ do
 		fi
 	fi
 
-	tput cuu 3
+	#tput cuu 3
 
-	printProgressBar "GPU" $XFCOUNT
-	printProgressBar "ROOT" $NPOP
+	#printProgressBar "GPU" $XFCOUNT
+	#printProgressBar "ROOT" $NPOP
 	echo ""
 
 done

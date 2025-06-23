@@ -9,27 +9,36 @@
 WorkingDir=$1
 RunName=$2
 gen=$3
+
+check_exit_status() {
+    if [ $? -ne 0 ]; then
+        echo $1
+		exit 1
+    fi
+}
+
 source $WorkingDir/Run_Outputs/$RunName/setup.sh
 
-module load python/3.7-2019.10
 
 
-cd $WorkingDir/Antenna_Performance_Metric
 
 chmod -R 777 $WorkingDir/Antenna_Performance_Metric
-if [ $SYMMETRY -eq 0 ]
-then
-	python XFintoPUEO.py $NPOP $WorkingDir $RunName $gen $indiv
-else
-	python XFintoPUEO_Symmetric.py $NPOP $WorkingDir $RunName $gen $WorkingDir/Test_Outputs
-fi
-#chmod -R 777 /fs/ess/PAS1960/BiconeEvolutionOSC/BiconeEvolution/
+cd $WorkingDir/Antenna_Performance_Metric
 
-## Temporary fix for cross-pols being low!!!
-for i in $(seq 1 $NPOP)
+
+mkdir -p $WorkingDir/Run_Outputs/$RunName/dat_files/${gen}_dat_files 2>/dev/null
+for i in `seq 0 $((NPOP-1))`
 do
-	cp $PSIMDIR/pueoBuilder/components/pueoSim/data/antennas/hv_0_toyon ../Test_Outputs/hv_0_${gen}_${i}
-	cp $PSIMDIR/pueoBuilder/components/pueoSim/data/antennas/vh_0_toyon ../Test_Outputs/vh_0_${gen}_${i}
+  mkdir -p $WorkingDir/Run_Outputs/$RunName/dat_files/${gen}_dat_files/$i  2>/dev/null
 done
 
-chmod -R 777 $WorkingDir/Test_Outputs
+uan_files=`find $WorkingDir/Run_Outputs/$RunName/uan_files/${gen}_uan_files -name '*.uan'`
+
+for uan_file in $uan_files
+do 
+   uan_name=`basename uan_file`
+   python process_uan.py $uan_file #> $RunDir/Errs_And_Outs/DatOuts/${uan_name}.output 2>$RunDir/Errs_And_Outs/DatOuts/${uan_name}.error
+   check_exit_status "UAN -> DAT converion failed" 
+done
+
+

@@ -111,9 +111,7 @@ echo '3. Close XF'
 module load xfdtd/7.10.2.3
 
 xfdtd $XFProj --execute-macro-script=$RunXMacrosDir/simulation_PEC.xmacro || true
-
 chmod -R 775 $WorkingDir/../Xmacros 2> /dev/null
-
 
 # Submit the Batch XF Job to solve the simulations
 cd $WorkingDir
@@ -153,6 +151,10 @@ else
 fi
 
 echo "Submitting XF jobs with batch size $batch_size"
-sbatch --array=1-${XFCOUNT}%${batch_size} \
+echo sbatch --array=1-${XFCOUNT}%${batch_size} \
 	   --export=ALL,WorkingDir=$WorkingDir,RunName=$RunName,indiv=$individual_number,gen=${gen},batch_size=$batch_size \
 	   --job-name=${RunName} --time=${job_time} $job_file 
+sbatch --array=1-${XFCOUNT}%${batch_size} \
+           --export=ALL,WorkingDir=$WorkingDir,RunName=$RunName,indiv=$individual_number,gen=${gen},batch_size=$batch_size \
+           --job-name=${RunName} --time=${job_time} $job_file 
+

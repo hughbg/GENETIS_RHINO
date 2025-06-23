@@ -26,18 +26,18 @@ source $WorkingDir/Run_Outputs/$RunName/setup.sh
 ## We need the loop to pause until all the XF jobs are done
 ## To do this, we'll just count the flag files
 
-cd $WorkingDir/Run_Outputs/$RunName/GPUFlags/
+cd $WorkingDir/Run_Outputs/$RunName/Flags/GPUFlags/
 flag_files=$(ls | wc -l) #$(ls -l --file-type | grep -v '/$' | wc -l)
 
 #Now we need to repeat that for the rest of the jobs
 while [[ $flag_files -lt $XFCOUNT ]] #we need to loop until flag_files reaches totPop
 do
-	sleep 1m
+	sleep 5
 	echo $flag_files
 	flag_files=$(ls | wc -l) #$(ls -l --file-type | grep -v '/$' | wc -l)
 done
 
-rm -f $WorkingDir/Run_Outputs/$RunName/GPUFlags/*
+#rm -f $WorkingDir/Run_Outputs/$RunName/GPUFlags/*
 
 echo $flag_files
 echo "Done!"
@@ -49,7 +49,16 @@ cd $XmacrosDir
  
 rm -f output.xmacro
 
-#echo "var m = $i;" >> output.xmacro
+# run the xmacro output script
+cd $WorkingDir/Batch_Jobs
+mkdir -m775 $RunDir/uan_files/${gen}_uan_files/${indiv_in_pop} 2> /dev/null
+echo HERE single_XF_output_PUEO.sh :$indiv: :$WorkingDir: $RunName: :$gen:
+bash -x ./single_XF_output_PUEO.sh $indiv $WorkingDir $RunName $gen # 1> "$RunDir/Errs_And_Outs/XFintoPUEOOuts/PUEOsim_${indiv}.output" 2> "$RunDir/Errs_And_Outs/XFintoPUEOOuts/PUEOsim_${indiv}.error"
+echo SINGLE
+exit
+
+/single_XF_output_PUEO.sh $indiv $WorkingDir $RunName $gen
+echo "var m = $i;" >> output.xmacro
 echo "var NPOP = $NPOP;" >> output.xmacro
 echo "for (var k = $(($gen * $XFCOUNT + 1)); k <= $(($gen * $XFCOUNT + $XFCOUNT)); k++){" >> output.xmacro
 
@@ -65,7 +74,6 @@ sed -i "s+fileDirectory+${WorkingDir}+" output.xmacro
 
 module load xfdtd/7.10.2.3 #7.9.2.2
 xfdtd $XFProj --execute-macro-script=$XmacrosDir/output.xmacro || true --splash=false
-
 
 cd $WorkingDir/Antenna_Performance_Metric
 for i in $(seq $(($gen*$XFCOUNT + $indiv)) $(($gen*$XFCOUNT+$XFCOUNT)))

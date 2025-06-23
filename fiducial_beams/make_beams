@@ -1,0 +1,9 @@
+#!/bin/sh
+
+export PYTHONPATH=$PYTHONPATH:/users/PAS1960/hughgarsden/GENETIS_PUEO_rhino/Antenna_Performance_Metric
+
+python make_some_beams.py
+for f in peak_good peak_bad symmetrical_good symmetrical_bad decreasing_good decreasing_bad azimuth_zero azimuth_ninety gauss matlab_horn_351MHz_rot
+do
+    python ../Antenna_Performance_Metric/plotting.py ${f}.dat 
+done

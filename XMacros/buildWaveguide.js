@@ -1,12 +1,18 @@
 // Make a waveguide
-function build_waveguide(S,x_0,y_0,D) // D for "depdth"
+function build_waveguide(S,D) 
 {
-
+		// HG
+        // s - sidelength
+		// D - waveguide length     "depth", should be negative
+        //var X0=[];    // distance from center of ridges at bottom // previously 0.04
+        //var Y0=[];    // (half) width of ridges at bottom // previously 0.04
+        // D is depth but is fixed it is also negative
+        
 	// Make the edges to define the square
-	var edge1 = Line( new Cartesian3D(-S,-S, 0), new Cartesian3D(-S, S, 0));
-	var edge2 = Line( new Cartesian3D(-S, S, 0), new Cartesian3D(S, S, 0));
-	var edge3 = Line( new Cartesian3D(S,S, 0), new Cartesian3D(S, -S, 0));
-	var edge4 = Line( new Cartesian3D(S,-S, 0), new Cartesian3D(-S, -S, 0));
+	var edge1 = Line( new Cartesian3D(-S/2,-S/2, 0), new Cartesian3D(-S/2, S/2, 0));
+	var edge2 = Line( new Cartesian3D(-S/2, S/2, 0), new Cartesian3D(S/2, S/2, 0));
+	var edge3 = Line( new Cartesian3D(S/2, S/2, 0), new Cartesian3D(S/2, -S/2, 0));
+	var edge4 = Line( new Cartesian3D(S/2, -S/2, 0), new Cartesian3D(-S/2, -S/2, 0));
 	
 	// Declare sketches to be made from the edges
 	var wallSegment = new Sketch();
@@ -15,10 +21,17 @@ function build_waveguide(S,x_0,y_0,D) // D for "depdth"
 	wallSegment.addEdge(edge2);
 	wallSegment.addEdge(edge3);
 	wallSegment.addEdge(edge4);
+
+	var edge1 = Line( new Cartesian3D(-S/2,-S/2, D), new Cartesian3D(-S/2, S/2, D));
+	var edge2 = Line( new Cartesian3D(-S/2, S/2, D), new Cartesian3D(S/2, S/2, D));
+	var edge3 = Line( new Cartesian3D(S/2, S/2, D), new Cartesian3D(S/2, -S/2, D));
+	var edge4 = Line( new Cartesian3D(S/2, -S/2, D), new Cartesian3D(-S/2, -S/2, D));
+
 	bottomSegment.addEdge(edge1);
 	bottomSegment.addEdge(edge2);
 	bottomSegment.addEdge(edge3);
 	bottomSegment.addEdge(edge4);
+
 
 	// Let's start by making the bottom
 	var bottomCover = new Cover(bottomSegment);
@@ -27,8 +40,8 @@ function build_waveguide(S,x_0,y_0,D) // D for "depdth"
 	var bottomModel = new Model();
 	bottomModel.setRecipe( bottomRecipe );
 	// Add the surface
-	//var bottom = App.getActiveProject().getGeometryAssembly().append(bottomModel);
-	//bottom.name = "Bottom square";
+	var bottom = App.getActiveProject().getGeometryAssembly().append(bottomModel);
+	bottom.name = "Bottom square";
 
 	// Now we need to extrude the edges to get height
 	var walls = new Extrude( wallSegment, D);				// Makes an Extrude
@@ -55,6 +68,6 @@ function build_waveguide(S,x_0,y_0,D) // D for "depdth"
 	var wallProject = App.getActiveProject().getGeometryAssembly().append(wallModel);	// Adds the model to the project
 	var pecMaterial = App.getActiveProject().getMaterialList().getMaterial( "PEC" );	// Makes the material available
 	App.getActiveProject().setMaterial( wallProject, pecMaterial );						// Sets the material
-	//App.getActiveProject().setMaterial( bottom, pecMaterial );						// Sets the material
+	App.getActiveProject().setMaterial( bottom, pecMaterial );						// Sets the material
 
 }

@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# Run this after Loop.sh has finished. It will summarize what files have been generated
+# against what is expected. It looks for NaNs. 
+
+trim() {    
+    convert $1 -trim $$.png
+    mv $$.png $1
+}
+
+. ./setup.sh
+
+
+echo TotalGens $TotalGens
+TotalTotalGens=$((TotalGens+1))
+echo NPOP $NPOP 		
+echo FREQ $FREQS				
+echo FreqStart $FreqStart
+echo FreqStep $FreqStep
+
+# This is all gonna change with multiple frequencies
+echo 
+echo "Expect $TotalTotalGens generationDNA files"
+echo "Expect $TotalTotalGens fitnessScores files"
+echo "Expect $((TotalTotalGens*NPOP*4)) detector png files"
+echo "Expect $((TotalTotalGens*NPOP)) uan files"
+echo "Expect $((TotalTotalGens*NPOP*3)) dat files"
+echo "Expect $((TotalTotalGens*NPOP)) horn png files"
+
+echo
+for name in generationDNA.csv fitnessScores.csv detector uan dat png
+do
+  if [ "$name" = "uan" ]
+  then num=`find -wholename "*/rhino-sim/*/*${name}" | wc -l` 
+  elif [ "$name" = "dat" ]
+  then num=`find -wholename "*/rhino-sim/*/*${name}" ! -wholename "*status*" | wc -l`
+  elif [ "$name" = "png" ]
+  then num=`find -wholename "*/rhino-sim/*plot_files*/*${name}" ! -wholename "*/rhino-sim/*plot_files*/*_af.${name}" | wc -l`
+  elif [ "$name" = "detector" ]
+  then num=`find -wholename "*/rhino-sim/Antenna_Images/*/*${name}_?.png" | wc -l`
+  else
+    num=`find -wholename "*/rhino-sim/*/*${name}*" | wc -l`  
+  fi
+  echo "There are $num $name files"
+done
+
+echo; echo "Searching for NaNs"; echo
+
+for name in generationDNA.csv fitnessScores.csv uan dat 
+do
+  if [ "$name" = "uan" ]
+  then files=`find -wholename "*/rhino-sim/*/*${name}"` 
+  elif [ "$name" = "dat" ]
+  then files=`find -wholename "*/rhino-sim/*/*${name}" ! -wholename "*status*"`
+  else
+    files=`find -wholename "*/rhino-sim/*/*${name}*"`  
+  fi
+  grep -i nan $files | grep -v NetInputPower        # NetInputPower in uan is always NaN
+done
+
+
+# Trim horn plots
+echo; echo "Trim horn plots"; echo
+horn_plots=`find -wholename "*/rhino-sim/*/*detector*"` 
+
+for f in $horn_plots
+do trim $f
+done
+
+# Montage horn plots
+echo; echo "Montage horn plots"; echo
+for gen in `seq 0 $TotalGens`
+do
+  for indiv in `seq 0 $((NPOP-1))`
+  do
+    montage -tile x2 `ls ./Run_Outputs/rhino-sim/Antenna_Images/$gen/${indiv}_detector_?.png` -geometry 512x200 -background black ./Run_Outputs/rhino-sim/Antenna_Images/$gen/${indiv}_detector.png
+    trim ./Run_Outputs/rhino-sim/Antenna_Images/$gen/${indiv}_detector.png
+  done
+done
+
+echo; echo "Add fitness to beams"; echo
+python add_fitness.py $TotalTotalGens $NPOP
+
+
+echo; echo "HTML"; echo
+
+echo "<table>" > horns.html
+for gen in `seq 0 $TotalGens`
+do
+  echo "<tr><td rowspan=$NPOP><h1>Gen $gen</h1></tr>" >> horns.html
+  echo "<tr>" >> horns.html
+  for indiv in `seq 0 $((NPOP-1))`
+  do
+    echo "<td>" >> horns.html
+
+    # Start inner table with 2 rows, the first is horn and the second with beam
+    echo "<table>" >> horns.html
+    echo "<tr>" >> horns.html
+    echo "<td align=centre>" >> horns.html
+    echo "<img src=./Run_Outputs/rhino-sim/Antenna_Images/$gen/${indiv}_detector.png>" >> horns.html
+    echo "</td>" >> horns.html
+    echo "</tr>" >> horns.html
+
+    echo "<tr>" >> horns.html
+    echo "<td align=center>" >> horns.html
+    echo "<img src=./Run_Outputs/rhino-sim/plot_files/${gen}_plot_files/${indiv}/${gen}_${indiv}_1_af.png>" >> horns.html
+    echo "</td>" >> horns.html
+    echo "</tr>" >> horns.html
+    echo "</table>" >> horns.html
+    # End inner table
+
+    echo "</td>" >> horns.html
+  done
+  echo "</tr>" >> horns.html
+done
+echo "</table>" >> horns.html
+
+
+

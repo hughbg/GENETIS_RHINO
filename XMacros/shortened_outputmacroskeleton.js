@@ -100,7 +100,7 @@ if( !inputpower.isValid() ){
 Output.println( "5getCurrentDataSet() : " +
 inputpower.getReasonWhyInvalid() );
 }
-for (var i = 0; i <= 130; i++){
+for (var i = 0; i < freqs; i++){
 var file = rundir + "/uan_files/" + gen + "_uan_files/" + indiv_in_pop;
 file = file + "/" + gen + "_" + indiv_in_pop + "_" + (i+1) + ".uan"
 Output.println(file);

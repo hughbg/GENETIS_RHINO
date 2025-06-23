@@ -8,14 +8,17 @@ function CreateSensors()
         sensorDataDefinitionList.clear();
 
     // Create a sensor
-        var farSensor = new FarZoneSensor();
+	var angleIncrementDegrees = 1;
+	var angleIncrementRadians = angleIncrementDegrees*Math.PI/180
+
+    var farSensor = new FarZoneSensor();
     farSensor.retrieveSteadyStateData = true;
-       farSensor.setAngle1IncrementRadians(Math.PI/36.0);
-    farSensor.setAngle2IncrementRadians(Math.PI/36.0);
-       farSensor.name = "Far Zone Sensor";
+    farSensor.setAngle1IncrementRadians(angleIncrementRadians);
+    farSensor.setAngle2IncrementRadians(angleIncrementRadians);
+    farSensor.name = "Far Zone Sensor";
 
 
     var FarZoneSensorList = App.getActiveProject().getFarZoneSensorList();
-       FarZoneSensorList.clear();
+    FarZoneSensorList.clear();
     FarZoneSensorList.addFarZoneSensor( farSensor );
 }

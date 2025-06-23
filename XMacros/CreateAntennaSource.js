@@ -1,6 +1,7 @@
 
-function CreateAntennaSource(h_or_v, x, y, Height, L)
+function CreateAntennaSource(h_or_v, waveguide_side, D)
 {
+    // D is depth of waveguide, shoud be negative
     // Here we will create our waveform, create our circuit component definition for the feed, and create
     // a CircuitComponent that will attach those to our current geometry.
     var waveformList = App.getActiveProject().getWaveformList();
@@ -69,14 +70,14 @@ function CreateAntennaSource(h_or_v, x, y, Height, L)
 	}
 */
 	if(h_or_v == 0) // 0 for h, 1 for v
-	{
-		var coordinate1 = new CoordinateSystemPosition( -x, 0, Height);
-		var coordinate2 = new CoordinateSystemPosition( x, 0, Height);
+	{   
+		var coordinate1 = new CoordinateSystemPosition( -waveguide_side/2, 0, D/2);
+		var coordinate2 = new CoordinateSystemPosition( -waveguide_side/6, 0, D/2);
 	}
 	else
 	{
-		var coordinate1 = new CoordinateSystemPosition( 0, -x, Height);
-    	var coordinate2 = new CoordinateSystemPosition( 0, x, Height);
+		var coordinate1 = new CoordinateSystemPosition( 0, -waveguide_side/2, D/2);
+    	var coordinate2 = new CoordinateSystemPosition( 0, waveguide_side/6, D/2);
 		
 	}
 	//var coordinate3 = new CoordinateSystemPosition( 0, -x2, height);

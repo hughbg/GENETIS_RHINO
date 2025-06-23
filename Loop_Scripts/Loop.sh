@@ -30,6 +30,11 @@ if ! [ -f "saveStates/${saveStateFile}" ]; then
 	mkdir -m777 $RunDir
 
 	source $WorkingDir/$setupfile
+    if [ $ParallelXFPUEO -ne 1 ]
+    then
+        echo "ParallelXFPUEO must be 1"   # HG
+        exit 1
+    fi
 
 	cp $WorkingDir/$setupfile $RunDir/setup.sh
 
@@ -57,7 +62,7 @@ fi
 
 check_exit_status() {
     if [ $? -ne 0 ]; then
-        echo "Script Failed, Exiting"
+        echo $1
 		exit 1
     fi
 }
@@ -67,8 +72,25 @@ InitialGen=$(sed '1q;d' saveStates/${saveStateFile})
 state=$(sed '2q;d' saveStates/${saveStateFile})
 indiv=$(sed '3q;d' saveStates/${saveStateFile})
 
-echo "${InitialGen}"
-echo "${state}"
+echo "${InitialGen}"    # start at this generation
+echo "${state}"         # states as below
+# indiv is a tricky one. Looks like "individual" but I don't think it is. It is set to 1 along with inital gen/state when 
+# there is no savedStates file. This is for rhino right at the start of a new run of the algorithm. In Part C it is set to 1 again.
+# In Part_B.sh it's value is always put into the simulation_PEC macro. In Part_B1 if gen==0 and indiv==1 then a call to save the project is put in
+# simulation_PEC but conditioned on indiv==1 in javascript. As a switch it could be used as:
+# Start with indiv==1. 
+#   indiv will always be 1. In Part_B1.sh the call to save project will be put in simulation_PEC on gen==0 because indiv==1, and 
+#   because indiv==1 the call will be executed.
+#   On subsequent generations the call to save project will be not put in simulation_PEC because, even though indiv==1, gen!=0.
+#   Result: the call to save project will be executed on gen==0 only. 
+# Start with indiv==0.
+#   The call to save project will be not put in simulation_PEC by Part_B1.sh on gen==0 because indiv==0. It is not there to execute.
+#   During gen==0 (and all generations) Part C will set indiv=1
+#   On subsequent generations the call to save project will be not put in simulation_PEC because, even though indiv==1, gen!=0. 
+#   Result: the call to save project will never be executed. [What about if the system crashes on gen==0 before part C or after Part C]
+#
+# The value of indiv is only passed to Part_B1.sh and no other Loop_Part scripts.
+# Don't fiddle with indiv, leave as it is.
 echo "${indiv}"
 
 for gen in $(seq $InitialGen $TotalGens)
@@ -93,12 +115,12 @@ do
 
 		mkdir -m777 $RunDir/Errs_And_Outs
 		mkdir -m777 $RunDir/Errs_And_Outs/XFGPUOutputs
-		mkdir -m777 $RunDir/Errs_And_Outs/PUEO_Outputs
+		mkdir -m777 $RunDir/Errs_And_Outs/PlotOuts
 		mkdir -m777 $RunDir/Errs_And_Outs/psimouts
-		mkdir -m777 $RunDir/Errs_And_Outs/PUEO_Errors
+		mkdir -m777 $RunDir/Errs_And_Outs/DatOuts
 		mkdir -m775 $RunDir/Errs_And_Outs/XF_Outputs
 		mkdir -m775 $RunDir/Errs_And_Outs/XF_Errors
-		mkdir -m775 $RunDir/Errs_And_Outs/XFintoPUEOOuts
+		mkdir -m775 $RunDir/Errs_And_Outs/UANOuts
 		if [ $JobPlotting -eq 1 ]
 		then
 			mkdir -m775 $RunDir/Errs_And_Outs/Plotting_Outputs
@@ -126,7 +148,7 @@ do
 		start=$(date +%s)
 
 		./Loop_Parts/Part_A/Part_A.sh $InputVars
-		check_exit_status
+		check_exit_status "Part_A failed"
 
 		state=2
 		./Loop_Scripts/SaveState_Prototype.sh $gen $state $RunName $indiv
@@ -149,6 +171,7 @@ do
 		echo "Part B1 took ${runtime} seconds" >> $RunDir/time.txt
 	fi
 
+
 	## Part B2 ##
 	if [ $state -eq 3 ]
 	then
@@ -159,6 +182,7 @@ do
 			./Loop_Parts/Part_B/Part_B2_Serial.sh $InputVars
 		else
 			./Loop_Parts/Part_B/Part_B2_Parallel.sh $InputVars
+            check_exit_status "Part B2 failed"
 		fi
 
 		state=4
@@ -176,10 +200,11 @@ do
 		start=$(date +%s)
 		indiv=1
 
-		if [ $ParallelXFPUEO -eq 0 ]
-		then
+		#if [ $ParallelXFPUEO -eq 0 ]
+		#then
 			./Loop_Parts/Part_C/Part_C.sh $InputVars
-		fi
+            check_exit_status "Part_C failed"
+		#fi
 
 		state=5
 		./Loop_Scripts/SaveState_Prototype.sh $gen $state $RunName $indiv
@@ -193,10 +218,10 @@ do
 	then
 		start=$(date +%s)
 
-		if [ $ParallelXFPUEO -eq 0 ]
-		then
-			./Loop_Parts/Part_D/Part_D1.sh $InputVars
-		fi
+		#if [ $ParallelXFPUEO -eq 0 ]
+		#then
+		#	./Loop_Parts/Part_D/Part_D1.sh $InputVars
+		#fi
 		state=6
 
 		./Loop_Scripts/SaveState_Prototype.sh $gen $state $RunName $indiv
@@ -209,10 +234,10 @@ do
 	if [ $state -eq 6 ]
 	then
 		start=$(date +%s)
-		if [ $ParallelXFPUEO -eq 0 ]
-		then
-			./Loop_Parts/Part_D/Part_D2.sh $InputVars
-		fi
+		#if [ $ParallelXFPUEO -eq 0 ]
+		#then
+		#	./Loop_Parts/Part_D/Part_D2.sh $InputVars
+		#fi
 		state=7
 		./Loop_Scripts/SaveState_Prototype.sh $gen $state $RunName $indiv
 		end=$(date +%s)
@@ -225,8 +250,8 @@ do
 	then
 		start=$(date +%s)
 
-		./Loop_Parts/Part_E/Part_E.sh $InputVars
-		check_exit_status
+		./Loop_Parts/Part_E/Part_E.sh $InputVars 
+		check_exit_status "Part_E failed"
 
 		state=8
 		./Loop_Scripts/SaveState_Prototype.sh $gen $state $RunName $indiv 
@@ -240,13 +265,14 @@ do
 	then
 		start=$(date +%s)
 
-		if [ $JobPlotting -eq 0 ]
-		then
+		#if [ $JobPlotting -eq 0 ]
+		#then
 			./Loop_Parts/Part_F/Part_F.sh $InputVars
-		else
-			sbatch --export=ALL,WorkingDir=$WorkingDir,RunName=$RunName,gen=$gen\
-				   --job-name=Plotting_${RunName}_${gen}  ./Loop_Parts/Part_F/Part_F_Job.sh
-		fi
+            check_exit_status "Part_F failed"
+		#else
+		#	sbatch --export=ALL,WorkingDir=$WorkingDir,RunName=$RunName,gen=$gen\
+		#		   --job-name=Plotting_${RunName}_${gen}  ./Loop_Parts/Part_F/Part_F_Job.sh
+		#fi
 
 		state=1
 		./Loop_Scripts/SaveState_Prototype.sh $gen $state $RunName $indiv
@@ -254,6 +280,7 @@ do
 		runtime=$((end-start))
 		echo "Part F took ${runtime} seconds" >> $RunDir/time.txt
 	fi
+
 	genend=$(date +%s)
 	genruntime=$((genend-genstart))
 	echo "Generation ${gen} took ${genruntime} seconds" >> $RunDir/time.txt

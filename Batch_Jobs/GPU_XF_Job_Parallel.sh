@@ -57,6 +57,7 @@ fi
 
 while [ $indiv_in_pop -le $upper_limit ]
 do
+        echo "$0 running individual $indiv_in_pop"
 	# Get the Individuals's Simulation Directory
 	individual_number=$((gen*NPOP*symmetry_multiplier+sim_num))
 	indiv_dir_parent=$XFProj/Simulations/$(printf "%06d" $individual_number)
@@ -64,9 +65,19 @@ do
 
 	# Run The xsolver
 	cd $indiv_dir
-	xfsolver --use-xstream=true --xstream-use-number=2 --num-threads=2 -v
+        for i in `seq 10`
+	do 
+          if xfsolver --use-xstream=true --xstream-use-number=2 --num-threads=2 -v
+          then
+            break
+          else
+            echo; echo "xsolver failed on attempt $i, trying again"; echo
+            sleep 120
+          fi
+        done
 
 	echo "finished XF solver"
+	sleep 20
 
 	# Create a flag file to indicate that the GPU job is done
 	cd $RunDir/Flags/TMPGPUFlags
@@ -82,9 +93,9 @@ do
 	if [ $indiv_in_pop -gt $upper_limit ]
 	then
 		# echo how long this bash script has been running
-		echo $SECONDS
+		echo "Running for $SECONDS seconds"
 		# echo all job information about time
-		sacct -X -j $SLURM_JOB_ID --format=JobID,JobName,Partition,Elapsed,CPUTime,Reserved
+		sacct -X -j $SLURM_JOB_ID --format=JobID,JobName,Partition,Elapsed,CPUTime
 		exit 0
 	fi
 
